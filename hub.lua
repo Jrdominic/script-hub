@@ -16,6 +16,7 @@ local KEY_DURATION = 4 * 3600             -- every key lasts 4h from first use
 local GAME_MODULES = {
     [286090429] = "game_module.lua",
     [1962086868] = "tower_of_hell.lua", -- Tower of Hell
+    [3582763398] = "tower_of_hell.lua", -- Pro Tower of Hell
 }
 
 --==================================================================
