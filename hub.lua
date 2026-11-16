@@ -4,6 +4,7 @@
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 local BASE_URL = "https://raw.githubusercontent.com/Jrdominic/script-hub/main/modules/"
@@ -137,80 +138,116 @@ local function keyGate()
         return true
     end
 
-    -- 2) UI
+    -- 2) UI — same theme as the Tower of Hell module
+    local Theme = {
+        Bg       = Color3.fromRGB(18, 18, 22),
+        Element  = Color3.fromRGB(28, 28, 34),
+        ElementH = Color3.fromRGB(38, 38, 46),
+        Accent   = Color3.fromRGB(90, 130, 255),
+        Text     = Color3.fromRGB(235, 235, 240),
+        TextDim  = Color3.fromRGB(140, 140, 150),
+    }
+
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "HubKeyGate"
     ScreenGui.ResetOnSpawn = false
+    ScreenGui.DisplayOrder = 9999
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
     local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.fromOffset(300, 190)
-    Frame.Position = UDim2.new(0.5, -150, 0.5, -95)
-    Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Frame.Size = UDim2.fromOffset(360, 240)
+    Frame.Position = UDim2.new(0.5, -180, 0.5, -120)
+    Frame.BackgroundColor3 = Theme.Bg
     Frame.BorderSizePixel = 0
     Frame.Active = true
-    Frame.Draggable = true
     Frame.Parent = ScreenGui
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = Frame
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
 
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -20, 0, 30)
-    title.Position = UDim2.new(0, 10, 0, 8)
+    title.Size = UDim2.new(1, -20, 0, 34)
+    title.Position = UDim2.fromOffset(14, 0)
     title.BackgroundTransparency = 1
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextScaled = true
+    title.TextColor3 = Theme.Accent
+    title.TextSize = 20
     title.Font = Enum.Font.GothamBold
-    title.Text = "Script Hub - Key System"
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Text = "Syro Hub"
     title.Parent = Frame
+
+    local sub = Instance.new("TextLabel")
+    sub.Size = UDim2.new(1, -20, 0, 16)
+    sub.Position = UDim2.fromOffset(14, 34)
+    sub.BackgroundTransparency = 1
+    sub.TextColor3 = Theme.TextDim
+    sub.TextSize = 13
+    sub.Font = Enum.Font.Gotham
+    sub.TextXAlignment = Enum.TextXAlignment.Left
+    sub.Text = "Key System"
+    sub.Parent = Frame
+
+    -- drag by the title bar (same pattern as the ToH module)
+    local dragging, dragStart, startPos
+    title.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = Frame.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
 
     local box = Instance.new("TextBox")
     box.Size = UDim2.new(1, -20, 0, 34)
-    box.Position = UDim2.new(0, 10, 0, 44)
-    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.Position = UDim2.new(0, 10, 0, 60)
+    box.BackgroundColor3 = Theme.Element
+    box.TextColor3 = Theme.Text
     box.PlaceholderText = "Paste your key here"
+    box.PlaceholderColor3 = Theme.TextDim
     box.Text = ""
-    box.TextScaled = true
+    box.TextSize = 14
     box.Font = Enum.Font.Gotham
     box.ClearTextOnFocus = false
     box.Parent = Frame
-
-    local boxCorner = Instance.new("UICorner")
-    boxCorner.CornerRadius = UDim.new(0, 6)
-    boxCorner.Parent = box
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 6)
 
     local status = Instance.new("TextLabel")
-    status.Size = UDim2.new(1, -20, 0, 24)
-    status.Position = UDim2.new(0, 10, 0, 84)
+    status.Size = UDim2.new(1, -20, 0, 22)
+    status.Position = UDim2.new(0, 10, 0, 100)
     status.BackgroundTransparency = 1
-    status.TextColor3 = Color3.fromRGB(180, 180, 180)
-    status.TextScaled = true
+    status.TextColor3 = Theme.TextDim
+    status.TextSize = 13
     status.Font = Enum.Font.Gotham
+    status.TextXAlignment = Enum.TextXAlignment.Left
     status.Text = "waiting for key..."
     status.Parent = Frame
 
-    local function btnProps(b, text, y, col)
-        b.Size = UDim2.new(1, -20, 0, 30)
-        b.Position = UDim2.new(0, 10, 0, y)
+    local function btnProps(b, text, x, w, col)
+        b.Size = UDim2.new(0, w, 0, 32)
+        b.Position = UDim2.new(0, x, 0, 132)
         b.BackgroundColor3 = col
-        b.TextColor3 = Color3.fromRGB(255, 255, 255)
-        b.TextScaled = true
+        b.TextColor3 = Theme.Text
+        b.TextSize = 14
         b.Font = Enum.Font.GothamBold
         b.Text = text
         b.Parent = Frame
-        local c = Instance.new("UICorner")
-        c.CornerRadius = UDim.new(0, 6)
-        c.Parent = b
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
     end
 
     local getKey = Instance.new("TextButton")
-    btnProps(getKey, "Get Key", 114, Color3.fromRGB(40, 120, 220))
+    btnProps(getKey, "Get Key", 10, 164, Theme.ElementH)
 
     local verify = Instance.new("TextButton")
-    btnProps(verify, "Verify Key", 150, Color3.fromRGB(40, 180, 80))
+    btnProps(verify, "Verify Key", 186, 164, Theme.Accent)
 
     -- "Get Key": copy link to clipboard (executor setclipboard, fallback shows the link)
     getKey.MouseButton1Click:Connect(function()
