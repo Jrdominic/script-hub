@@ -21,6 +21,12 @@ local GAME_MODULES = {
     [5253186791] = "main.lua", -- Tower of Hell (new place)
 }
 
+-- Universe IDs catch private/reserved/banned servers, whose PlaceId differs
+local GAME_UNIVERSES = {
+    [111958650] = "main.lua", -- Arsenal
+    [703124385] = "main.lua", -- Tower of Hell (all places + private servers)
+}
+
 --==================================================================
 -- HTTP HELPER (executor game:HttpGet first, HttpService fallback)
 --==================================================================
@@ -289,7 +295,7 @@ keyGate()
 if not KeySystem.valid then return end -- window was closed without a valid key
 
 local placeId = game.PlaceId
-local moduleName = GAME_MODULES[placeId]
+local moduleName = GAME_MODULES[placeId] or GAME_UNIVERSES[game.GameId]
 
 if moduleName then
     notify("Game supported. Loading module...")

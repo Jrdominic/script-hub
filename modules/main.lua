@@ -9,7 +9,7 @@ local SCRIPTS = {}
 --==================================================================
 -- ARSENAL (PlaceId 286090429)
 --==================================================================
-SCRIPTS[286090429] = function()
+local function arsenal()
 --[[
     Syro Hub | Arsenal
     Aimbot (hold RMB) / ESP (outline box + health bar + tracers) / Infinite Ammo / Rapid Fire
@@ -624,6 +624,8 @@ MiscTab:CreateSlider({
 
 print("[Syro Hub] loaded — hold RMB to aim, F9 for console")
 end
+
+SCRIPTS[286090429] = arsenal
 
 --==================================================================
 -- TOWER OF HELL (PlaceIds 1962086868, 3582763398, 5253186791)
@@ -1418,10 +1420,16 @@ SCRIPTS[1962086868] = towerOfHell -- Tower of Hell
 SCRIPTS[3582763398] = towerOfHell -- Pro Tower of Hell
 SCRIPTS[5253186791] = towerOfHell -- Tower of Hell (new place id)
 
+-- Universe IDs catch private/reserved/banned servers, whose PlaceId differs
+local SCRIPTS_UNIVERSE = {
+    [111958650] = arsenal,      -- Arsenal
+    [703124385]  = towerOfHell, -- Tower of Hell (any place / private server)
+}
+
 --==================================================================
 -- DISPATCH
 --==================================================================
-local fn = SCRIPTS[game.PlaceId]
+local fn = SCRIPTS[game.PlaceId] or SCRIPTS_UNIVERSE[game.GameId]
 if fn then
     fn()
 else
