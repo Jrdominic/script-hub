@@ -138,14 +138,16 @@ local function keyGate()
         return true
     end
 
-    -- 2) UI — same theme as the Tower of Hell module
+    -- 2) UI — Neverlose style, same theme as Syro Hub
     local Theme = {
-        Bg       = Color3.fromRGB(18, 18, 22),
-        Element  = Color3.fromRGB(28, 28, 34),
-        ElementH = Color3.fromRGB(38, 38, 46),
-        Accent   = Color3.fromRGB(90, 130, 255),
-        Text     = Color3.fromRGB(235, 235, 240),
-        TextDim  = Color3.fromRGB(140, 140, 150),
+        Background   = Color3.fromRGB(24, 24, 30),
+        Section      = Color3.fromRGB(18, 18, 23),
+        Element      = Color3.fromRGB(34, 34, 42),
+        ElementHover = Color3.fromRGB(44, 44, 54),
+        Outline      = Color3.fromRGB(48, 48, 58),
+        Accent       = Color3.fromRGB(90, 130, 255),
+        Text         = Color3.fromRGB(230, 230, 240),
+        TextDim      = Color3.fromRGB(150, 150, 160),
     }
 
     local ScreenGui = Instance.new("ScreenGui")
@@ -154,40 +156,59 @@ local function keyGate()
     ScreenGui.DisplayOrder = 9999
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
+    -- main window
     local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.fromOffset(360, 240)
-    Frame.Position = UDim2.new(0.5, -180, 0.5, -120)
-    Frame.BackgroundColor3 = Theme.Bg
+    Frame.Size = UDim2.fromOffset(380, 250)
+    Frame.Position = UDim2.new(0.5, -190, 0.5, -125)
+    Frame.BackgroundColor3 = Theme.Background
     Frame.BorderSizePixel = 0
     Frame.Active = true
     Frame.Parent = ScreenGui
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
+    local outline = Instance.new("UIStroke", Frame)
+    outline.Color = Theme.Outline
+    outline.Thickness = 1
+    outline.Transparency = 0.4
+
+    -- title bar (same style as the hub window header)
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.BackgroundColor3 = Theme.Section
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = Frame
+    Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 8)
+
+    -- cover the bottom corners of the title bar so only the window is rounded
+    local barFix = Instance.new("Frame")
+    barFix.Size = UDim2.new(1, 0, 0, 10)
+    barFix.Position = UDim2.new(0, 0, 1, -10)
+    barFix.BackgroundColor3 = Theme.Section
+    barFix.BorderSizePixel = 0
+    barFix.Parent = titleBar
+
+    -- accent strip on the left, like the hub tabs
+    local accentStrip = Instance.new("Frame")
+    accentStrip.Size = UDim2.new(0, 3, 1, -12)
+    accentStrip.Position = UDim2.new(0, 12, 0, 6)
+    accentStrip.BackgroundColor3 = Theme.Accent
+    accentStrip.BorderSizePixel = 0
+    accentStrip.Parent = titleBar
 
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -20, 0, 34)
-    title.Position = UDim2.fromOffset(14, 0)
+    title.Size = UDim2.new(1, -60, 1, 0)
+    title.Position = UDim2.fromOffset(24, 0)
     title.BackgroundTransparency = 1
-    title.TextColor3 = Theme.Accent
-    title.TextSize = 20
+    title.TextColor3 = Theme.Text
+    title.TextSize = 17
     title.Font = Enum.Font.GothamBold
     title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Text = "Syro Hub"
-    title.Parent = Frame
+    title.Text = "Syro Hub  <font color=\"#5A82FF\">|</font>  Key System"
+    title.RichText = true
+    title.Parent = titleBar
 
-    local sub = Instance.new("TextLabel")
-    sub.Size = UDim2.new(1, -20, 0, 16)
-    sub.Position = UDim2.fromOffset(14, 34)
-    sub.BackgroundTransparency = 1
-    sub.TextColor3 = Theme.TextDim
-    sub.TextSize = 13
-    sub.Font = Enum.Font.Gotham
-    sub.TextXAlignment = Enum.TextXAlignment.Left
-    sub.Text = "Key System"
-    sub.Parent = Frame
-
-    -- drag by the title bar (same pattern as the ToH module)
+    -- drag by the title bar
     local dragging, dragStart, startPos
-    title.InputBegan:Connect(function(input)
+    titleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
@@ -206,12 +227,13 @@ local function keyGate()
         end
     end)
 
+    -- key input box (hub-style element)
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(1, -20, 0, 34)
-    box.Position = UDim2.new(0, 10, 0, 60)
+    box.Size = UDim2.new(1, -24, 0, 34)
+    box.Position = UDim2.new(0, 12, 0, 56)
     box.BackgroundColor3 = Theme.Element
     box.TextColor3 = Theme.Text
-    box.PlaceholderText = "Paste your key here"
+    box.PlaceholderText = "paste your key here"
     box.PlaceholderColor3 = Theme.TextDim
     box.Text = ""
     box.TextSize = 14
@@ -219,10 +241,22 @@ local function keyGate()
     box.ClearTextOnFocus = false
     box.Parent = Frame
     Instance.new("UICorner", box).CornerRadius = UDim.new(0, 6)
+    local boxStroke = Instance.new("UIStroke", box)
+    boxStroke.Color = Theme.Outline
+    boxStroke.Thickness = 1
+    boxStroke.Transparency = 0.5
+    box.Focused:Connect(function()
+        boxStroke.Color = Theme.Accent
+        boxStroke.Transparency = 0
+    end)
+    box.FocusLost:Connect(function()
+        boxStroke.Color = Theme.Outline
+        boxStroke.Transparency = 0.5
+    end)
 
     local status = Instance.new("TextLabel")
-    status.Size = UDim2.new(1, -20, 0, 22)
-    status.Position = UDim2.new(0, 10, 0, 100)
+    status.Size = UDim2.new(1, -24, 0, 22)
+    status.Position = UDim2.new(0, 12, 0, 98)
     status.BackgroundTransparency = 1
     status.TextColor3 = Theme.TextDim
     status.TextSize = 13
@@ -233,29 +267,40 @@ local function keyGate()
 
     local function btnProps(b, text, x, w, col)
         b.Size = UDim2.new(0, w, 0, 32)
-        b.Position = UDim2.new(0, x, 0, 132)
+        b.Position = UDim2.new(0, x, 0, 136)
         b.BackgroundColor3 = col
         b.TextColor3 = Theme.Text
         b.TextSize = 14
         b.Font = Enum.Font.GothamBold
         b.Text = text
+        b.AutoButtonColor = false
         b.Parent = Frame
         Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+
+        -- hub-style hover feedback
+        b.MouseEnter:Connect(function()
+            b.BackgroundColor3 = Theme.ElementHover
+        end)
+        b.MouseLeave:Connect(function()
+            b.BackgroundColor3 = col
+        end)
     end
 
     local getKey = Instance.new("TextButton")
-    btnProps(getKey, "Get Key", 10, 164, Theme.ElementH)
+    btnProps(getKey, "Get Key", 12, 172, Theme.Element)
 
     local verify = Instance.new("TextButton")
-    btnProps(verify, "Verify Key", 186, 164, Theme.Accent)
+    btnProps(verify, "Verify Key", 196, 172, Theme.Accent)
 
     -- "Get Key": copy link to clipboard (executor setclipboard, fallback shows the link)
     getKey.MouseButton1Click:Connect(function()
         local ok = pcall(function() setclipboard(KEY_LINK) end)
         if ok then
             status.Text = "key link copied - paste it in your browser"
+            status.TextColor3 = Theme.TextDim
         else
             status.Text = KEY_LINK
+            status.TextColor3 = Theme.Accent
         end
         notify("Key link copied to clipboard")
     end)
@@ -266,10 +311,12 @@ local function keyGate()
         local key = (box.Text or ""):gsub("%s+", "")
         if #key < 8 then
             status.Text = "enter a key first"
+            status.TextColor3 = Color3.fromRGB(255, 100, 100)
             return
         end
         verifying = true
         status.Text = "verifying..."
+        status.TextColor3 = Theme.TextDim
         task.spawn(function()
             if keyAccepted(key) then
                 -- keep the original first-use time if this is the same cached key
@@ -277,15 +324,18 @@ local function keyGate()
                 local firstUse = (c == key and ts) or now()
                 if keyExpired(firstUse) then
                     status.Text = "key expired - 4h limit reached"
+                    status.TextColor3 = Color3.fromRGB(255, 100, 100)
                 else
                     KeySystem.valid = true
                     writeCachedKey(key, firstUse)
                     status.Text = "key valid!" .. remainingText(firstUse)
+                    status.TextColor3 = Theme.Accent
                     task.wait(0.5)
                     ScreenGui:Destroy()
                 end
             else
                 status.Text = "invalid key - get a new one"
+                status.TextColor3 = Color3.fromRGB(255, 100, 100)
             end
             verifying = false
         end)
