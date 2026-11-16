@@ -12,11 +12,13 @@ local KEY_FILE = "SyroHub_key.txt"        -- cached key + first-use timestamp
 local FREE_KEY = "Slushboi"               -- built-in key: free, no work.ink needed
 local KEY_DURATION = 4 * 3600             -- every key lasts 4h from first use
 
--- Only supported game
+-- Only supported games — all load the single shared module, which
+-- dispatches on PlaceId internally
 local GAME_MODULES = {
-    [286090429] = "game_module.lua",
-    [1962086868] = "tower_of_hell.lua", -- Tower of Hell
-    [3582763398] = "tower_of_hell.lua", -- Pro Tower of Hell
+    [286090429] = "main.lua", -- Arsenal
+    [1962086868] = "main.lua", -- Tower of Hell
+    [3582763398] = "main.lua", -- Pro Tower of Hell
+    [5253186791] = "main.lua", -- Tower of Hell (new place)
 }
 
 --==================================================================
