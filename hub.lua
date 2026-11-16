@@ -6,9 +6,11 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local BASE_URL = "https://raw.githubusercontent.com/user/hub/main/modules/" -- FILL: your repo path
+local BASE_URL = "https://raw.githubusercontent.com/Jrdominic/script-hub/main/modules/"
 local KEY_LINK = "https://work.ink/1Vwu/syrohub" -- your work.ink key-system link
-local KEY_FILE = "SyroHub_key.txt"        -- cached valid key
+local KEY_FILE = "SyroHub_key.txt"        -- cached key + first-use timestamp
+local FREE_KEY = "Slushboi"               -- built-in key: free, no work.ink needed
+local KEY_DURATION = 4 * 3600             -- every key lasts 4h from first use
 
 -- Only supported game
 local GAME_MODULES = {
@@ -55,22 +57,73 @@ local function validateToken(token)
     return data.valid == true
 end
 
+local function now()
+    return (os and os.time) and os.time() or 0
+end
+
+local function isFreeKey(key)
+    return type(key) == "string" and key:lower() == FREE_KEY:lower()
+end
+
+local function keyExpired(firstUse)
+    local t = now()
+    return t > 0 and firstUse ~= nil and (t - firstUse) >= KEY_DURATION
+end
+
+local function fmtLeft(sec)
+    return string.format("%dh %02dm", math.floor(sec / 3600), math.floor((sec % 3600) / 60))
+end
+
+local function remainingText(firstUse)
+    local t = now()
+    if t <= 0 or firstUse == nil then return "" end
+    local left = KEY_DURATION - (t - firstUse)
+    if left <= 0 then return "" end
+    return " (" .. fmtLeft(left) .. " left)"
+end
+
+local function keyAccepted(key)
+    if isFreeKey(key) then return true end
+    return validateToken(key)
+end
+
 local function readCachedKey()
     if writefile and readfile and isfile and isfile(KEY_FILE) then
         local ok, cached = pcall(readfile, KEY_FILE)
         if ok and type(cached) == "string" then
-            return cached:gsub("%s+", "")
+            -- stored as "key|firstUseTimestamp"; bare keys from older versions have no timestamp
+            local key, ts = cached:match("^(.-)|(%d+)%s*$")
+            if not key then key, ts = cached, nil end
+            key = key:gsub("%s+", "")
+            if #key >= 8 or isFreeKey(key) then
+                local n = tonumber(ts)
+                return key, (n and n > 0) and n or nil
+            end
         end
     end
     return nil
 end
 
+local function writeCachedKey(key, firstUse)
+    if writefile then
+        pcall(writefile, KEY_FILE, key .. "|" .. tostring(firstUse or now()))
+    end
+end
+
 local function keyGate()
     -- 1) cached key
-    local cached = readCachedKey()
-    if cached and validateToken(cached) then
+    local cached, firstUse = readCachedKey()
+    if cached and keyExpired(firstUse) then
+        notify("Cached key expired - 4h limit reached")
+        if writefile then pcall(writefile, KEY_FILE, "") end
+        cached = nil
+    end
+    if cached and keyAccepted(cached) then
+        -- old-format cache entries have no timestamp: start the 4h clock now
+        firstUse = firstUse or now()
+        writeCachedKey(cached, firstUse)
         KeySystem.valid = true
-        notify("Key accepted (cached)")
+        notify("Key accepted (cached)" .. remainingText(firstUse))
         return true
     end
 
@@ -171,12 +224,19 @@ local function keyGate()
         verifying = true
         status.Text = "verifying..."
         task.spawn(function()
-            if validateToken(key) then
-                KeySystem.valid = true
-                if writefile then pcall(writefile, KEY_FILE, key) end
-                status.Text = "key valid!"
-                task.wait(0.5)
-                ScreenGui:Destroy()
+            if keyAccepted(key) then
+                -- keep the original first-use time if this is the same cached key
+                local c, ts = readCachedKey()
+                local firstUse = (c == key and ts) or now()
+                if keyExpired(firstUse) then
+                    status.Text = "key expired - 4h limit reached"
+                else
+                    KeySystem.valid = true
+                    writeCachedKey(key, firstUse)
+                    status.Text = "key valid!" .. remainingText(firstUse)
+                    task.wait(0.5)
+                    ScreenGui:Destroy()
+                end
             else
                 status.Text = "invalid key - get a new one"
             end
@@ -200,6 +260,11 @@ local function loadModule(moduleName)
     local result = httpGet(BASE_URL .. moduleName)
 
     if result and #result > 0 then
+        -- GitHub 404 pages start with this; catch them before loadstring chokes
+        if result:find("404: Not Found", 1, true) then
+            notify("Module not found - check BASE_URL / repo path")
+            return
+        end
         local func, err = loadstring(result)
         if func then
             notify("Loaded module: " .. moduleName)
